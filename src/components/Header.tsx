@@ -17,8 +17,9 @@ export function Header({ currentTime }: HeaderProps) {
             <div className="flex items-center gap-3">
               <ChefHat className="text-blue-600 dark:text-blue-400" size={32} />
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Mess Queue Manager</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-300">University Dining Hall</p>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Smart Mess Queue Manager</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300">VITB University Dining Hall</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Project by Group- 235</p>
               </div>
             </div>
           </div>

@@ -1,15 +1,17 @@
-import { Student, QueueEntry, HistoricalData } from '../types';
+import { Student, QueueEntry } from '../types';
 
 class StorageManager {
   private readonly STUDENTS_KEY = 'mess_students';
   private readonly QUEUE_KEY = 'mess_queue';
-  private readonly HISTORY_KEY = 'mess_history';
+
 
   // Student management
   getStudents(): Student[] {
     const data = localStorage.getItem(this.STUDENTS_KEY);
     return data ? JSON.parse(data) : this.getDefaultStudents();
   }
+
+  
 
   saveStudents(students: Student[]): void {
     localStorage.setItem(this.STUDENTS_KEY, JSON.stringify(students));
@@ -24,7 +26,7 @@ class StorageManager {
   getQueue(): QueueEntry[] {
     const data = localStorage.getItem(this.QUEUE_KEY);
     if (!data) return [];
-    
+
     return JSON.parse(data).map((entry: any) => ({
       ...entry,
       entryTime: new Date(entry.entryTime),
@@ -36,15 +38,40 @@ class StorageManager {
     localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
   }
 
+
   addToQueue(studentId: string): QueueEntry {
     const queue = this.getQueue();
+
+    const waitingIndex = queue.findIndex(
+      entry => entry.studentId === studentId && entry.status === 'waiting'
+    );
+
+    if (waitingIndex !== -1) {
+      const entry = queue[waitingIndex];
+      const exitTime = new Date();
+      const waitTime = Math.round(
+        (exitTime.getTime() - entry.entryTime.getTime()) / (1000 * 60)
+      );
+
+      const servedEntry: QueueEntry = {
+        ...entry,
+        exitTime,
+        waitTime,
+        status: 'served'
+      };
+
+      queue[waitingIndex] = servedEntry;
+      this.saveQueue(queue);
+      return servedEntry;
+    }
+
     const newEntry: QueueEntry = {
       id: crypto.randomUUID(),
       studentId,
       entryTime: new Date(),
       status: 'waiting'
     };
-    
+
     queue.push(newEntry);
     this.saveQueue(queue);
     return newEntry;
@@ -55,62 +82,27 @@ class StorageManager {
     const entryIndex = queue.findIndex(
       entry => entry.studentId === studentId && entry.status === 'waiting'
     );
-    
+
     if (entryIndex === -1) return null;
-    
+
     const entry = queue[entryIndex];
     const exitTime = new Date();
-    const waitTime = Math.round((exitTime.getTime() - entry.entryTime.getTime()) / (1000 * 60));
-    
+    const waitTime = Math.round(
+      (exitTime.getTime() - entry.entryTime.getTime()) / (1000 * 60)
+    );
+
     queue[entryIndex] = {
       ...entry,
       exitTime,
       waitTime,
       status: 'served'
     };
-    
+
     this.saveQueue(queue);
-    this.saveToHistory(queue[entryIndex]);
     return queue[entryIndex];
   }
 
-  // Historical data
-  private saveToHistory(entry: QueueEntry): void {
-    const history = this.getHistory();
-    const today = new Date().toDateString();
-    
-    let todayData = history.find(h => h.date === today);
-    if (!todayData) {
-      todayData = {
-        date: today,
-        totalStudents: 0,
-        averageWaitTime: 0,
-        peakHour: '12:00',
-        entries: []
-      };
-      history.push(todayData);
-    }
-    
-    todayData.entries.push(entry);
-    todayData.totalStudents = todayData.entries.length;
-    todayData.averageWaitTime = this.calculateAverageWaitTime(todayData.entries);
-    
-    localStorage.setItem(this.HISTORY_KEY, JSON.stringify(history));
-  }
-
-  getHistory(): HistoricalData[] {
-    const data = localStorage.getItem(this.HISTORY_KEY);
-    return data ? JSON.parse(data) : [];
-  }
-
-  private calculateAverageWaitTime(entries: QueueEntry[]): number {
-    const served = entries.filter(e => e.waitTime !== undefined);
-    if (served.length === 0) return 0;
-    
-    const total = served.reduce((sum, entry) => sum + (entry.waitTime || 0), 0);
-    return Math.round(total / served.length);
-  }
-
+  // Default students
   private getDefaultStudents(): Student[] {
     const defaultStudents = [
       { id: '1', name: 'Aman', rollNumber: 'CS001', email: 'aman@vitbhopal.ac.in', qrCode: 'QR001' },
@@ -122,8 +114,10 @@ class StorageManager {
       { id: '7', name: 'Ritik', rollNumber: 'CS007', email: 'ritik@vitbhopal.ac.in', qrCode: 'QR007' },
       { id: '8', name: 'Amitesh', rollNumber: 'CS008', email: 'amitesh@vitbhopal.ac.in', qrCode: 'QR008' },
       { id: '9', name: 'Sumit', rollNumber: 'CS009', email: 'sumit@vitbhopal.ac.in', qrCode: 'QR009' },
+      { id: '10', name: 'Kushagra', rollNumber: 'CS010', email: 'kushagra@vitbhopal.ac.in', qrCode: 'QR010' },
+      { id: '11', name: 'Anan', rollNumber: 'CS011', email: 'anan@vitbhopal.ac.in', qrCode: 'QR011' },
     ];
-    
+
     this.saveStudents(defaultStudents);
     return defaultStudents;
   }
@@ -131,43 +125,48 @@ class StorageManager {
   // Analytics
   getQueueStats(): any {
     const queue = this.getQueue();
+
     const currentQueue = queue.filter(entry => entry.status === 'waiting').length;
-    const history = this.getHistory();
-    const today = history.find(h => h.date === new Date().toDateString());
-    
     const served = queue.filter(entry => entry.status === 'served');
-    const avgWaitTime = served.length > 0 
-      ? Math.round(served.reduce((sum, entry) => sum + (entry.waitTime || 0), 0) / served.length)
+
+    const avgWaitTime = served.length > 0
+      ? Math.round(
+          served.reduce((sum, entry) => sum + (entry.waitTime || 0), 0) / served.length
+        )
       : 0;
+
+    const peakTime = this.computePeakHourFromEntries(served.length ? served : queue);
 
     return {
       currentQueue,
       averageWaitTime: avgWaitTime,
       totalServed: served.length,
-      peakTime: this.getPeakTime(queue),
+      peakTime,
       estimatedWaitTime: this.calculateEstimatedWaitTime(currentQueue, avgWaitTime)
     };
   }
 
-  private getPeakTime(entries: QueueEntry[]): string {
-    const hourCounts: { [key: string]: number } = {};
-    
-    entries.forEach(entry => {
-      const hour = entry.entryTime.getHours();
-      const hourKey = `${hour}:00`;
-      hourCounts[hourKey] = (hourCounts[hourKey] || 0) + 1;
+  private computePeakHourFromEntries(entries: QueueEntry[]): string {
+    const timeCounts: { [key: string]: number } = {};
+
+    entries.forEach(e => {
+      const d = e.entryTime;
+      if (!d || !(d instanceof Date)) return;
+      const hour = d.getHours().toString().padStart(2, '0');
+      const minute = d.getMinutes().toString().padStart(2, '0');
+      const timeKey = `${hour}:${minute}`;
+      timeCounts[timeKey] = (timeCounts[timeKey] || 0) + 1;
     });
-    
-    let peakHour = '12:00';
+
+    let peakHour = '00:00';
     let maxCount = 0;
-    
-    Object.entries(hourCounts).forEach(([hour, count]) => {
+    Object.entries(timeCounts).forEach(([time, count]) => {
       if (count > maxCount) {
         maxCount = count;
-        peakHour = hour;
+        peakHour = time;
       }
     });
-    
+
     return peakHour;
   }
 
@@ -176,6 +175,7 @@ class StorageManager {
     return Math.round(queueLength * Math.max(avgWaitTime * 0.8, 2));
   }
 
+  // Utilities
   clearTodayData(): void {
     localStorage.setItem(this.QUEUE_KEY, JSON.stringify([]));
   }
@@ -183,12 +183,10 @@ class StorageManager {
   exportData(): string {
     const students = this.getStudents();
     const queue = this.getQueue();
-    const history = this.getHistory();
-    
+
     return JSON.stringify({
       students,
       queue,
-      history,
       exportDate: new Date().toISOString()
     }, null, 2);
   }

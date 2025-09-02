@@ -3,7 +3,7 @@ import { BarChart3, Download, Users, Clock } from 'lucide-react';
 import { storage } from '../utils/storage';
 
 export function Analytics() {
-  const history = storage.getHistory();
+  // const history = storage.getHistory();
   const stats = storage.getQueueStats();
   
   const handleExport = () => {
@@ -97,34 +97,6 @@ export function Analytics() {
           </div>
         </div>
       </div>
-
-      {history.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transition-colors">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Historical Data</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-600">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Students Served</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Avg Wait Time</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Peak Hour</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.slice(-7).map((day, index) => (
-                  <tr key={index} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{new Date(day.date).toLocaleDateString()}</td>
-                    <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{day.totalStudents}</td>
-                    <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{day.averageWaitTime} min</td>
-                    <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{day.peakHour}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
