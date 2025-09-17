@@ -1,4 +1,3 @@
-
 import { Search, User, Mail, Hash } from 'lucide-react';
 import { Student } from '../types';
 import { useState } from 'react';
@@ -7,9 +6,7 @@ interface StudentListProps {
   students: Student[];
 }
 
-
-export function StudentList({ students }: StudentListProps) 
-{
+export function StudentList({ students }: StudentListProps) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredStudents = students.filter(student =>
@@ -42,7 +39,7 @@ export function StudentList({ students }: StudentListProps)
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto">
-        {filteredStudents.map((student) => (
+        {filteredStudents.map(student => (
           <div
             key={student.id}
             className="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:shadow-md dark:hover:shadow-gray-900/20 transition-all bg-white dark:bg-gray-700"

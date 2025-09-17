@@ -1,4 +1,3 @@
-
 import { Header } from './components/Header';
 import { Navigation } from './components/Navigation';
 import { QRScanner } from './components/QRScanner';
@@ -31,7 +30,7 @@ function App() {
       // Show success notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
-      notification.textContent = entry.status === 'waiting' ? 'Student added to queue!' : 'Student served!';
+      notification.textContent = entry.status === 'in_queue' ? 'Student added to queue!' : 'Student served!';
       document.body.appendChild(notification);
       
       setTimeout(() => {

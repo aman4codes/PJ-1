@@ -123,16 +123,20 @@ class StorageManager {
   // Process movement from queue to mess
   processQueueMovement(): void {
     const queue = this.getQueue();
-    
+    const { messCount } = this.getCurrentCounts();
+    const availableSlots = this.MESS_CAPACITY - messCount;
+
+    if (availableSlots <= 0) return; // No space in mess
+
     // Get students in queue, sorted by entry time (FIFO)
     const queuedStudents = queue
       .filter(entry => entry.status === 'in_queue')
       .sort((a, b) => a.queueEntryTime!.getTime() - b.queueEntryTime!.getTime());
 
-    // Move students from queue to mess if space is available
-    for (const entry of queuedStudents) {
-      if (!this.canEnterMess()) break;
-      
+    // Move only as many students as there are available slots
+    const studentsToMove = queuedStudents.slice(0, availableSlots);
+
+    for (const entry of studentsToMove) {
       const entryIndex = queue.findIndex(e => e.id === entry.id);
       if (entryIndex !== -1) {
         queue[entryIndex] = {
@@ -185,21 +189,70 @@ class StorageManager {
       { id: '9', name: 'Sumit', rollNumber: 'CS009', email: 'sumit@vitbhopal.ac.in', qrCode: 'QR009' },
       { id: '10', name: 'Kushagra', rollNumber: 'CS010', email: 'kushagra@vitbhopal.ac.in', qrCode: 'QR010' },
       { id: '11', name: 'Anan', rollNumber: 'CS011', email: 'anan@vitbhopal.ac.in', qrCode: 'QR011' },
-      { id: '12', name: 'Arjun', rollNumber: 'CS012', email: 'arjun@vitbhopal.ac.in', qrCode: 'QR012' },
-      { id: '13', name: 'Vikram', rollNumber: 'CS013', email: 'vikram@vitbhopal.ac.in', qrCode: 'QR013' },
-      { id: '14', name: 'Rohit', rollNumber: 'CS014', email: 'rohit@vitbhopal.ac.in', qrCode: 'QR014' },
-      { id: '15', name: 'Karan', rollNumber: 'CS015', email: 'karan@vitbhopal.ac.in', qrCode: 'QR015' },
-      { id: '16', name: 'Nikhil', rollNumber: 'CS016', email: 'nikhil@vitbhopal.ac.in', qrCode: 'QR016' },
-      { id: '17', name: 'Aditya', rollNumber: 'CS017', email: 'aditya@vitbhopal.ac.in', qrCode: 'QR017' },
-      { id: '18', name: 'Prateek', rollNumber: 'CS018', email: 'prateek@vitbhopal.ac.in', qrCode: 'QR018' },
-      { id: '19', name: 'Ankit', rollNumber: 'CS019', email: 'ankit@vitbhopal.ac.in', qrCode: 'QR019' },
-      { id: '20', name: 'Deepak', rollNumber: 'CS020', email: 'deepak@vitbhopal.ac.in', qrCode: 'QR020' },
-      { id: '21', name: 'Gaurav', rollNumber: 'CS021', email: 'gaurav@vitbhopal.ac.in', qrCode: 'QR021' },
-      { id: '22', name: 'Manish', rollNumber: 'CS022', email: 'manish@vitbhopal.ac.in', qrCode: 'QR022' },
-      { id: '23', name: 'Rajesh', rollNumber: 'CS023', email: 'rajesh@vitbhopal.ac.in', qrCode: 'QR023' },
-      { id: '24', name: 'Suresh', rollNumber: 'CS024', email: 'suresh@vitbhopal.ac.in', qrCode: 'QR024' },
-      { id: '25', name: 'Akash', rollNumber: 'CS025', email: 'akash@vitbhopal.ac.in', qrCode: 'QR025' },
-      { id: '26', name: 'Vishal', rollNumber: 'CS026', email: 'vishal@vitbhopal.ac.in', qrCode: 'QR026' },
+      { id: '12', name: 'Keshav', rollNumber: 'CS012', email: 'keshav@vitbhopal.ac.in', qrCode: 'QR012' },
+      { id: '13', name: 'Aryan', rollNumber: 'CS013', email: 'aryan@vitbhopal.ac.in', qrCode: 'QR013' },
+      { id: '14', name: 'Rajesh', rollNumber: 'CS014', email: 'rajesh@vitbhopal.ac.in', qrCode: 'QR014' },
+      { id: '15', name: 'Gopal', rollNumber: 'CS015', email: 'gopal@vitbhopal.ac.in', qrCode: 'QR015' },
+      { id: '16', name: 'Shyam', rollNumber: 'CS016', email: 'shyam@vitbhopal.ac.in', qrCode: 'QR016' },
+      { id: '17', name: 'Radha', rollNumber: 'CS017', email: 'radha@vitbhopal.ac.in', qrCode: 'QR017' },
+      { id: '18', name: 'Mohan', rollNumber: 'CS018', email: 'mohan@vitbhopal.ac.in', qrCode: 'QR018' },
+      { id: '19', name: 'Rohan', rollNumber: 'CS019', email: 'rohan@vitbhopal.ac.in', qrCode: 'QR019' },
+      { id: '20', name: 'Sohan', rollNumber: 'CS020', email: 'sohan@vitbhopal.ac.in', qrCode: 'QR020' },
+      { id: '21', name: 'Karan', rollNumber: 'CS021', email: 'karan@vitbhopal.ac.in', qrCode: 'QR021' },
+      { id: '22', name: 'Arjun', rollNumber: 'CS022', email: 'arjun@vitbhopal.ac.in', qrCode: 'QR022' },
+      { id: '23', name: 'Bheem', rollNumber: 'CS023', email: 'bheem@vitbhopal.ac.in', qrCode: 'QR023' },
+      { id: '24', name: 'Nakul', rollNumber: 'CS024', email: 'nakul@vitbhopal.ac.in', qrCode: 'QR024' },
+      { id: '25', name: 'Sahdev', rollNumber: 'CS025', email: 'sahdev@vitbhopal.ac.in', qrCode: 'QR025' },
+      { id: '26', name: 'Yudhisthir', rollNumber: 'CS026', email: 'yudhisthir@vitbhopal.ac.in', qrCode: 'QR026' },
+      { id: '27', name: 'Draupadi', rollNumber: 'CS027', email: 'draupadi@vitbhopal.ac.in', qrCode: 'QR027' },
+      { id: '28', name: 'Kunti', rollNumber: 'CS028', email: 'kunti@vitbhopal.ac.in', qrCode: 'QR028' },
+      { id: '29', name: 'Gandhari', rollNumber: 'CS029', email: 'gandhari@vitbhopal.ac.in', qrCode: 'QR029' },
+      { id: '30', name: 'Dhritarashtra', rollNumber: 'CS030', email: 'dhritarashtra@vitbhopal.ac.in', qrCode: 'QR030' },
+      { id: '31', name: 'Vidur', rollNumber: 'CS031', email: 'vidur@vitbhopal.ac.in', qrCode: 'QR031' },
+      { id: '32', name: 'Sanjay', rollNumber: 'CS032', email: 'sanjay@vitbhopal.ac.in', qrCode: 'QR032' },
+      { id: '33', name: 'Drona', rollNumber: 'CS033', email: 'drona@vitbhopal.ac.in', qrCode: 'QR033' },
+      { id: '34', name: 'Arvind', rollNumber: 'CS034', email: 'arvind@vitbhopal.ac.in', qrCode: 'QR034' },
+      { id: '35', name: 'Vijay', rollNumber: 'CS035', email: 'vijay@vitbhopal.ac.in', qrCode: 'QR035' },
+      { id: '36', name: 'Rajeev', rollNumber: 'CS036', email: 'rajeev@vitbhopal.ac.in', qrCode: 'QR036' },
+      { id: '37', name: 'Priya', rollNumber: 'CS037', email: 'priya@vitbhopal.ac.in', qrCode: 'QR037' },
+      { id: '38', name: 'Neha', rollNumber: 'CS038', email: 'neha@vitbhopal.ac.in', qrCode: 'QR038' },
+      { id: '39', name: 'Anjali', rollNumber: 'CS039', email: 'anjali@vitbhopal.ac.in', qrCode: 'QR039' },
+      { id: '40', name: 'Deepak', rollNumber: 'CS040', email: 'deepak@vitbhopal.ac.in', qrCode: 'QR040' },
+      { id: '41', name: 'Amit', rollNumber: 'CS041', email: 'amit@vitbhopal.ac.in', qrCode: 'QR041' },
+      { id: '42', name: 'Sumit', rollNumber: 'CS042', email: 'sumit@vitbhopal.ac.in', qrCode: 'QR042' },
+      { id: '43', name: 'Rahul', rollNumber: 'CS043', email: 'rahul@vitbhopal.ac.in', qrCode: 'QR043' },
+      { id: '44', name: 'Pooja', rollNumber: 'CS044', email: 'pooja@vitbhopal.ac.in', qrCode: 'QR044' },
+      { id: '45', name: 'Arti', rollNumber: 'CS045', email: 'arti@vitbhopal.ac.in', qrCode: 'QR045' },
+      { id: '46', name: 'Kajal', rollNumber: 'CS046', email: 'kajal@vitbhopal.ac.in', qrCode: 'QR046' },
+      { id: '47', name: 'Nisha', rollNumber: 'CS047', email: 'nisha@vitbhopal.ac.in', qrCode: 'QR047' },
+      { id: '48', name: 'Divya', rollNumber: 'CS048', email: 'divya@vitbhopal.ac.in', qrCode: 'QR048' },
+      { id: '49', name: 'Shweta', rollNumber: 'CS049', email: 'shweta@vitbhopal.ac.in', qrCode: 'QR049' },
+      { id: '50', name: 'Garima', rollNumber: 'CS050', email: 'garima@vitbhopal.ac.in', qrCode: 'QR050' },
+      { id: '51', name: 'Ananya', rollNumber: 'CS051', email: 'ananya@vitbhopal.ac.in', qrCode: 'QR051' },
+      { id: '52', name: 'Aishwarya', rollNumber: 'CS052', email: 'aishwarya@vitbhopal.ac.in', qrCode: 'QR052' },
+      { id: '53', name: 'Aarushi', rollNumber: 'CS053', email: 'aarushi@vitbhopal.ac.in', qrCode: 'QR053' },
+      { id: '54', name: 'Barkha', rollNumber: 'CS054', email: 'barkha@vitbhopal.ac.in', qrCode: 'QR054' },
+      { id: '55', name: 'Chhavi', rollNumber: 'CS055', email: 'chhavi@vitbhopal.ac.in', qrCode: 'QR055' },
+      { id: '56', name: 'Deepshikha', rollNumber: 'CS056', email: 'deepshikha@vitbhopal.ac.in', qrCode: 'QR056' },
+      { id: '57', name: 'Ekta', rollNumber: 'CS057', email: 'ekta@vitbhopal.ac.in', qrCode: 'QR057' },
+      { id: '58', name: 'Farheen', rollNumber: 'CS058', email: 'farheen@vitbhopal.ac.in', qrCode: 'QR058' },
+      { id: '59', name: 'Geetika', rollNumber: 'CS059', email: 'geetika@vitbhopal.ac.in', qrCode: 'QR059' },
+      { id: '60', name: 'Harshita', rollNumber: 'CS060', email: 'harshita@vitbhopal.ac.in', qrCode: 'QR060' },
+      { id: '61', name: 'Ishika', rollNumber: 'CS061', email: 'ishika@vitbhopal.ac.in', qrCode: 'QR061' },
+      { id: '62', name: 'Jyoti', rollNumber: 'CS062', email: 'jyoti@vitbhopal.ac.in', qrCode: 'QR062' },
+      { id: '63', name: 'Kirti', rollNumber: 'CS063', email: 'kirti@vitbhopal.ac.in', qrCode: 'QR063' },
+      { id: '64', name: 'Lakshmi', rollNumber: 'CS064', email: 'lakshmi@vitbhopal.ac.in', qrCode: 'QR064' },
+      { id: '65', name: 'Madhu', rollNumber: 'CS065', email: 'madhu@vitbhopal.ac.in', qrCode: 'QR065' },
+      { id: '66', name: 'Neha', rollNumber: 'CS066', email: 'neha1@vitbhopal.ac.in', qrCode: 'QR066' },
+      { id: '67', name: 'Om', rollNumber: 'CS067', email: 'om@vitbhopal.ac.in', qrCode: 'QR067' },
+      { id: '68', name: 'Preeti', rollNumber: 'CS068', email: 'preeti@vitbhopal.ac.in', qrCode: 'QR068' },
+      { id: '69', name: 'Queen', rollNumber: 'CS069', email: 'queen@vitbhopal.ac.in', qrCode: 'QR069' },
+      { id: '70', name: 'Riya', rollNumber: 'CS070', email: 'riya@vitbhopal.ac.in', qrCode: 'QR070' },
+      { id: '71', name: 'Shivani', rollNumber: 'CS071', email: 'shivani@vitbhopal.ac.in', qrCode: 'QR071' },
+      { id: '72', name: 'Tanvi', rollNumber: 'CS072', email: 'tanvi@vitbhopal.ac.in', qrCode: 'QR072' },
+      { id: '73', name: 'Uma', rollNumber: 'CS073', email: 'uma@vitbhopal.ac.in', qrCode: 'QR073' },
+      { id: '74', name: 'Varsha', rollNumber: 'CS074', email: 'varsha@vitbhopal.ac.in', qrCode: 'QR074' },
+      { id: '75', name: 'Zoya', rollNumber: 'CS075', email: 'zoya@vitbhopal.ac.in', qrCode: 'QR075' },
     ];
 
     this.saveStudents(defaultStudents);
@@ -258,8 +311,9 @@ class StorageManager {
   }
 
   private calculateEstimatedWaitTime(queueLength: number, avgWaitTime: number): number {
-    if (queueLength === 0) return 0;
-    return Math.round(queueLength * Math.max(avgWaitTime * 0.8, 3));
+    // Adjusted calculation:  Base wait time + (queue length * avg wait time)
+    const baseWaitTime = 2; // Minimum wait time even if the queue is empty
+    return Math.round(baseWaitTime + (queueLength * Math.max(avgWaitTime * 0.8, 3)));
   }
 
   // Utilities
