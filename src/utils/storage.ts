@@ -185,6 +185,21 @@ class StorageManager {
       { id: '9', name: 'Sumit', rollNumber: 'CS009', email: 'sumit@vitbhopal.ac.in', qrCode: 'QR009' },
       { id: '10', name: 'Kushagra', rollNumber: 'CS010', email: 'kushagra@vitbhopal.ac.in', qrCode: 'QR010' },
       { id: '11', name: 'Anan', rollNumber: 'CS011', email: 'anan@vitbhopal.ac.in', qrCode: 'QR011' },
+      { id: '12', name: 'Arjun', rollNumber: 'CS012', email: 'arjun@vitbhopal.ac.in', qrCode: 'QR012' },
+      { id: '13', name: 'Vikram', rollNumber: 'CS013', email: 'vikram@vitbhopal.ac.in', qrCode: 'QR013' },
+      { id: '14', name: 'Rohit', rollNumber: 'CS014', email: 'rohit@vitbhopal.ac.in', qrCode: 'QR014' },
+      { id: '15', name: 'Karan', rollNumber: 'CS015', email: 'karan@vitbhopal.ac.in', qrCode: 'QR015' },
+      { id: '16', name: 'Nikhil', rollNumber: 'CS016', email: 'nikhil@vitbhopal.ac.in', qrCode: 'QR016' },
+      { id: '17', name: 'Aditya', rollNumber: 'CS017', email: 'aditya@vitbhopal.ac.in', qrCode: 'QR017' },
+      { id: '18', name: 'Prateek', rollNumber: 'CS018', email: 'prateek@vitbhopal.ac.in', qrCode: 'QR018' },
+      { id: '19', name: 'Ankit', rollNumber: 'CS019', email: 'ankit@vitbhopal.ac.in', qrCode: 'QR019' },
+      { id: '20', name: 'Deepak', rollNumber: 'CS020', email: 'deepak@vitbhopal.ac.in', qrCode: 'QR020' },
+      { id: '21', name: 'Gaurav', rollNumber: 'CS021', email: 'gaurav@vitbhopal.ac.in', qrCode: 'QR021' },
+      { id: '22', name: 'Manish', rollNumber: 'CS022', email: 'manish@vitbhopal.ac.in', qrCode: 'QR022' },
+      { id: '23', name: 'Rajesh', rollNumber: 'CS023', email: 'rajesh@vitbhopal.ac.in', qrCode: 'QR023' },
+      { id: '24', name: 'Suresh', rollNumber: 'CS024', email: 'suresh@vitbhopal.ac.in', qrCode: 'QR024' },
+      { id: '25', name: 'Akash', rollNumber: 'CS025', email: 'akash@vitbhopal.ac.in', qrCode: 'QR025' },
+      { id: '26', name: 'Vishal', rollNumber: 'CS026', email: 'vishal@vitbhopal.ac.in', qrCode: 'QR026' },
     ];
 
     this.saveStudents(defaultStudents);
