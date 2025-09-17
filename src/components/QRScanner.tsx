@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QrCode, User, Clock, CheckCircle, UserCheck, UserPlus } from 'lucide-react';
+import { QrCode, User, Clock, CheckCircle, UserCheck, UserPlus, AlertCircle } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { Student, QueueEntry } from '../types';
 
@@ -11,11 +11,13 @@ export function QRScanner({ onScan }: QRScannerProps) {
   const [qrInput, setQrInput] = useState('');
   const [lastScanned, setLastScanned] = useState<{ student: Student; entry: QueueEntry | null } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleScan = async () => {
     if (!qrInput.trim()) return;
     
     setIsScanning(true);
+    setError(null);
     
     // Simulate scanning delay
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -23,31 +25,21 @@ export function QRScanner({ onScan }: QRScannerProps) {
     const student = storage.findStudentByQR(qrInput.trim());
     
     if (!student) {
-      alert('Student not found! Please check the QR code.');
+      setError('Student not found! Please check the QR code.');
       setIsScanning(false);
       return;
     }
 
-    // Check if student is already in queue
-    const queue = storage.getQueue();
-    const existingEntry = queue.find(
-      entry => entry.studentId === student.id && entry.status === 'waiting'
-    );
-
-    let result: QueueEntry | null = null;
-    
-    if (existingEntry) {
-      // Student is exiting
-      result = storage.exitQueue(student.id);
-    } else {
-      // Student is entering
-      result = storage.addToQueue(student.id);
+    try {
+      const result = storage.processStudentScan(student.id);
+      setLastScanned({ student, entry: result });
+      setQrInput('');
+      onScan(result);
+    } catch (err) {
+      setError((err as Error).message);
     }
     
-    setLastScanned({ student, entry: result });
-    setQrInput('');
     setIsScanning(false);
-    onScan(result);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -87,9 +79,13 @@ export function QRScanner({ onScan }: QRScannerProps) {
         </div>
 
         {lastScanned && (
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 border border-green-200 dark:border-green-700 rounded-lg p-6 animate-fadeIn transition-colors">
+          <div className={`border rounded-lg p-6 animate-fadeIn transition-colors ${
+            lastScanned.entry?.status === 'served' 
+              ? 'bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 border-green-200 dark:border-green-700'
+              : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-blue-200 dark:border-blue-700'
+          }`}>
             <div className="flex items-center gap-3 mb-3">
-              <User className="text-green-600 dark:text-green-400" size={24} />
+              <User className={lastScanned.entry?.status === 'served' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'} size={24} />
               <div>
                 <h3 className="font-semibold text-gray-800 dark:text-white">{lastScanned.student.name}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300">Roll: {lastScanned.student.rollNumber}</p>
@@ -97,18 +93,25 @@ export function QRScanner({ onScan }: QRScannerProps) {
             </div>
             
             <div className="flex items-center gap-2 text-sm">
-              {lastScanned.entry?.status === 'waiting' ? (
+              {lastScanned.entry?.status === 'in_queue' ? (
                 <>
                   <Clock className="text-blue-600 dark:text-blue-400" size={16} />
                   <span className="text-blue-700 dark:text-blue-300 font-medium">
-                    Entered queue at {lastScanned.entry.entryTime.toLocaleTimeString()}
+                    Joined queue at {lastScanned.entry.queueEntryTime?.toLocaleTimeString()}
+                  </span>
+                </>
+              ) : lastScanned.entry?.status === 'in_mess' ? (
+                <>
+                  <UserCheck className="text-orange-600 dark:text-orange-400" size={16} />
+                  <span className="text-orange-700 dark:text-orange-300 font-medium">
+                    Entered mess at {lastScanned.entry.messEntryTime?.toLocaleTimeString()}
                   </span>
                 </>
               ) : (
                 <>
                   <CheckCircle className="text-green-600 dark:text-green-400" size={16} />
                   <span className="text-green-700 dark:text-green-300 font-medium">
-                    Served! Wait time: {lastScanned.entry?.waitTime || 0} minutes
+                    Completed! Total time: {lastScanned.entry?.waitTime || 0} minutes
                   </span>
                 </>
               )}
@@ -116,21 +119,31 @@ export function QRScanner({ onScan }: QRScannerProps) {
           </div>
         )}
 
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 animate-fadeIn transition-colors">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="text-red-600 dark:text-red-400" size={20} />
+              <span className="text-red-700 dark:text-red-300 font-medium">{error}</span>
+            </div>
+          </div>
+        )}
+
         <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 transition-colors">
-          <h3 className="font-semibold text-gray-800 dark:text-white mb-3">How it works:</h3>
+          <h3 className="font-semibold text-gray-800 dark:text-white mb-3">Two-Stage System:</h3>
           <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center gap-2">
               <UserPlus className="text-blue-500 dark:text-blue-400" size={16} />
-              <span><strong>First scan:</strong> Student enters queue and wait time starts</span>
+              <span><strong>Stage 1:</strong> Student joins queue (max 7 students)</span>
             </div>
             <div className="flex items-center gap-2">
-              <UserCheck className="text-green-500 dark:text-green-400" size={16} />
-              <span><strong>Second scan:</strong> Student receives food, exits queue, wait time calculated</span>
+              <UserCheck className="text-orange-500 dark:text-orange-400" size={16} />
+              <span><strong>Stage 2:</strong> Student enters mess when space available (max 20 students)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="text-green-500 dark:text-green-400" size={16} />
+              <span><strong>Final scan:</strong> Student exits mess, total time calculated</span>
             </div>
           </div>
-        </div>
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Demo QR Codes: QR001, QR002, QR003, QR004, QR005</p>
         </div>
       </div>
     </div>

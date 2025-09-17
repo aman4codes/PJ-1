@@ -3,15 +3,14 @@ import { Student, QueueEntry } from '../types';
 class StorageManager {
   private readonly STUDENTS_KEY = 'mess_students';
   private readonly QUEUE_KEY = 'mess_queue';
-
+  private readonly QUEUE_CAPACITY = 7;
+  private readonly MESS_CAPACITY = 20;
 
   // Student management
   getStudents(): Student[] {
     const data = localStorage.getItem(this.STUDENTS_KEY);
     return data ? JSON.parse(data) : this.getDefaultStudents();
   }
-
-  
 
   saveStudents(students: Student[]): void {
     localStorage.setItem(this.STUDENTS_KEY, JSON.stringify(students));
@@ -30,7 +29,9 @@ class StorageManager {
     return JSON.parse(data).map((entry: any) => ({
       ...entry,
       entryTime: new Date(entry.entryTime),
-      exitTime: entry.exitTime ? new Date(entry.exitTime) : undefined
+      exitTime: entry.exitTime ? new Date(entry.exitTime) : undefined,
+      queueEntryTime: entry.queueEntryTime ? new Date(entry.queueEntryTime) : undefined,
+      messEntryTime: entry.messEntryTime ? new Date(entry.messEntryTime) : undefined
     }));
   }
 
@@ -38,20 +39,47 @@ class StorageManager {
     localStorage.setItem(this.QUEUE_KEY, JSON.stringify(queue));
   }
 
-
-  addToQueue(studentId: string): QueueEntry {
+  // Get current counts
+  getCurrentCounts(): { queueCount: number; messCount: number } {
     const queue = this.getQueue();
+    const queueCount = queue.filter(entry => entry.status === 'in_queue').length;
+    const messCount = queue.filter(entry => entry.status === 'in_mess').length;
+    return { queueCount, messCount };
+  }
 
-    const waitingIndex = queue.findIndex(
-      entry => entry.studentId === studentId && entry.status === 'waiting'
+  // Check if queue has space
+  canJoinQueue(): boolean {
+    const { queueCount } = this.getCurrentCounts();
+    return queueCount < this.QUEUE_CAPACITY;
+  }
+
+  // Check if mess has space
+  canEnterMess(): boolean {
+    const { messCount } = this.getCurrentCounts();
+    return messCount < this.MESS_CAPACITY;
+  }
+
+  // Add student to queue or handle their progression
+  processStudentScan(studentId: string): QueueEntry {
+    const queue = this.getQueue();
+    
+    // Check if student is already in the system
+    const existingEntryIndex = queue.findIndex(
+      entry => entry.studentId === studentId && 
+      (entry.status === 'in_queue' || entry.status === 'in_mess')
     );
 
-    if (waitingIndex !== -1) {
-      const entry = queue[waitingIndex];
+    if (existingEntryIndex !== -1) {
+      // Student is exiting (either from queue or mess)
+      const entry = queue[existingEntryIndex];
       const exitTime = new Date();
-      const waitTime = Math.round(
-        (exitTime.getTime() - entry.entryTime.getTime()) / (1000 * 60)
-      );
+      
+      let waitTime = 0;
+      if (entry.status === 'in_mess' && entry.queueEntryTime) {
+        waitTime = Math.round(
+          (exitTime.getTime() - entry.queueEntryTime.getTime()) / (1000 * 60)
+        );
+      }
 
       const servedEntry: QueueEntry = {
         ...entry,
@@ -60,46 +88,87 @@ class StorageManager {
         status: 'served'
       };
 
-      queue[waitingIndex] = servedEntry;
+      queue[existingEntryIndex] = servedEntry;
       this.saveQueue(queue);
+      
+      // Process queue after someone exits
+      this.processQueueMovement();
+      
       return servedEntry;
     }
 
+    // New student trying to join
+    if (!this.canJoinQueue()) {
+      throw new Error('Queue is full! Please wait for space to become available.');
+    }
+
+    const now = new Date();
     const newEntry: QueueEntry = {
       id: crypto.randomUUID(),
       studentId,
-      entryTime: new Date(),
-      status: 'waiting'
+      entryTime: now,
+      queueEntryTime: now,
+      status: 'in_queue'
     };
 
     queue.push(newEntry);
     this.saveQueue(queue);
+    
+    // Try to move students from queue to mess
+    this.processQueueMovement();
+    
     return newEntry;
   }
 
-  exitQueue(studentId: string): QueueEntry | null {
+  // Process movement from queue to mess
+  processQueueMovement(): void {
     const queue = this.getQueue();
-    const entryIndex = queue.findIndex(
-      entry => entry.studentId === studentId && entry.status === 'waiting'
-    );
+    
+    // Get students in queue, sorted by entry time (FIFO)
+    const queuedStudents = queue
+      .filter(entry => entry.status === 'in_queue')
+      .sort((a, b) => a.queueEntryTime!.getTime() - b.queueEntryTime!.getTime());
 
-    if (entryIndex === -1) return null;
-
-    const entry = queue[entryIndex];
-    const exitTime = new Date();
-    const waitTime = Math.round(
-      (exitTime.getTime() - entry.entryTime.getTime()) / (1000 * 60)
-    );
-
-    queue[entryIndex] = {
-      ...entry,
-      exitTime,
-      waitTime,
-      status: 'served'
-    };
-
+    // Move students from queue to mess if space is available
+    for (const entry of queuedStudents) {
+      if (!this.canEnterMess()) break;
+      
+      const entryIndex = queue.findIndex(e => e.id === entry.id);
+      if (entryIndex !== -1) {
+        queue[entryIndex] = {
+          ...entry,
+          status: 'in_mess',
+          messEntryTime: new Date()
+        };
+      }
+    }
+    
     this.saveQueue(queue);
-    return queue[entryIndex];
+  }
+
+  // Force move next student from queue to mess (for manual control)
+  moveNextStudentToMess(): QueueEntry | null {
+    if (!this.canEnterMess()) return null;
+    
+    const queue = this.getQueue();
+    const nextInQueue = queue
+      .filter(entry => entry.status === 'in_queue')
+      .sort((a, b) => a.queueEntryTime!.getTime() - b.queueEntryTime!.getTime())[0];
+
+    if (!nextInQueue) return null;
+
+    const entryIndex = queue.findIndex(e => e.id === nextInQueue.id);
+    if (entryIndex !== -1) {
+      queue[entryIndex] = {
+        ...nextInQueue,
+        status: 'in_mess',
+        messEntryTime: new Date()
+      };
+      this.saveQueue(queue);
+      return queue[entryIndex];
+    }
+
+    return null;
   }
 
   // Default students
@@ -125,8 +194,8 @@ class StorageManager {
   // Analytics
   getQueueStats(): any {
     const queue = this.getQueue();
+    const { queueCount, messCount } = this.getCurrentCounts();
 
-    const currentQueue = queue.filter(entry => entry.status === 'waiting').length;
     const served = queue.filter(entry => entry.status === 'served');
 
     const avgWaitTime = served.length > 0
@@ -138,11 +207,14 @@ class StorageManager {
     const peakTime = this.computePeakHourFromEntries(served.length ? served : queue);
 
     return {
-      currentQueue,
+      currentQueueCount: queueCount,
+      currentMessCount: messCount,
       averageWaitTime: avgWaitTime,
       totalServed: served.length,
       peakTime,
-      estimatedWaitTime: this.calculateEstimatedWaitTime(currentQueue, avgWaitTime)
+      estimatedWaitTime: this.calculateEstimatedWaitTime(queueCount, avgWaitTime),
+      queueCapacity: this.QUEUE_CAPACITY,
+      messCapacity: this.MESS_CAPACITY
     };
   }
 
@@ -150,7 +222,7 @@ class StorageManager {
     const timeCounts: { [key: string]: number } = {};
 
     entries.forEach(e => {
-      const d = e.entryTime;
+      const d = e.queueEntryTime || e.entryTime;
       if (!d || !(d instanceof Date)) return;
       const hour = d.getHours().toString().padStart(2, '0');
       const minute = d.getMinutes().toString().padStart(2, '0');
@@ -172,7 +244,7 @@ class StorageManager {
 
   private calculateEstimatedWaitTime(queueLength: number, avgWaitTime: number): number {
     if (queueLength === 0) return 0;
-    return Math.round(queueLength * Math.max(avgWaitTime * 0.8, 2));
+    return Math.round(queueLength * Math.max(avgWaitTime * 0.8, 3));
   }
 
   // Utilities

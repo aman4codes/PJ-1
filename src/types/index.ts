@@ -12,15 +12,20 @@ export interface QueueEntry {
   entryTime: Date;
   exitTime?: Date;
   waitTime?: number; // in minutes
-  status: 'waiting' | 'served' | 'left';
+  status: 'in_queue' | 'in_mess' | 'served' | 'left';
+  queueEntryTime?: Date;
+  messEntryTime?: Date;
 }
 
 export interface QueueStats {
-  currentQueue: number;
+  currentQueueCount: number;
+  currentMessCount: number;
   averageWaitTime: number;
   totalServed: number;
   peakTime: string;
   estimatedWaitTime: number;
+  queueCapacity: number;
+  messCapacity: number;
 }
 
 export interface HistoricalData {
@@ -29,4 +34,3 @@ export interface HistoricalData {
   averageWaitTime: number;
   peakHour: string;
   entries: QueueEntry[];
-}
