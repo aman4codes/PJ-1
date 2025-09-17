@@ -34,3 +34,4 @@ export interface HistoricalData {
   averageWaitTime: number;
   peakHour: string;
   entries: QueueEntry[];
+}

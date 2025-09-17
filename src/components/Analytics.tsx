@@ -1,4 +1,3 @@
-
 import { BarChart3, Download, Users, Clock } from 'lucide-react';
 import { storage } from '../utils/storage';
 
@@ -63,8 +62,12 @@ export function Analytics() {
                 <span className="font-semibold text-gray-800 dark:text-white">{stats.totalServed}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-300">Currently Waiting:</span>
-                <span className="font-semibold text-gray-800 dark:text-white">{stats.currentQueue}</span>
+                <span className="text-gray-600 dark:text-gray-300">In Queue:</span>
+                <span className="font-semibold text-gray-800 dark:text-white">{stats.currentQueueCount}/{stats.queueCapacity}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-300">In Mess:</span>
+                <span className="font-semibold text-gray-800 dark:text-white">{stats.currentMessCount}/{stats.messCapacity}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-300">Peak Time:</span>
@@ -81,14 +84,14 @@ export function Analytics() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-300">Average Wait:</span>
-                <span className="font-semibold text-gray-800 dark:text-white">{stats.averageWaitTime} min</span>
+                <span className="font-semibold text-gray-800 dark:text-white">{stats.averageWaitTime} min total</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-300">Estimated Wait:</span>
+                <span className="text-gray-600 dark:text-gray-300">Est. Queue Wait:</span>
                 <span className="font-semibold text-gray-800 dark:text-white">{stats.estimatedWaitTime} min</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-300">Service Rate:</span>
+                <span className="text-gray-600 dark:text-gray-300">Throughput:</span>
                 <span className="font-semibold text-gray-800 dark:text-white">
                   {stats.averageWaitTime > 0 ? Math.round(60 / stats.averageWaitTime) : 0} students/hour
                 </span>
